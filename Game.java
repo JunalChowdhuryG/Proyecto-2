@@ -21,7 +21,33 @@ public class Game implements Runnable {
         this.board = new Board(this.currentLevel);
     }
 
-    public void addSnake(Snake snake) {
+    public synchronized void addNewPlayer(PlayerHandler player) {
+        List<Point> spawnPoints = board.getSafeSpawnPoints();
+        if (spawnPoints.isEmpty()) {
+            player.sendMessage("Sorry, the game is full or there's no space to spawn.");
+            player.closeConnection();
+            return;
+        }
+
+        // A quick check to avoid spawning on other snakes, though getSafeSpawnPoints should be enough
+        // for static maps. This is more for robustness.
+        List<Point> occupied = new ArrayList<>();
+        for (Snake s : snakes) {
+            occupied.addAll(s.getBody());
+        }
+        spawnPoints.removeAll(occupied);
+
+        if (spawnPoints.isEmpty()) {
+             player.sendMessage("Sorry, could not find a safe spawn point.");
+             player.closeConnection();
+             return;
+        }
+
+        Random rand = new Random();
+        Point spawnPoint = spawnPoints.get(rand.nextInt(spawnPoints.size()));
+
+        Snake snake = new Snake(spawnPoint.x, spawnPoint.y, player.getPlayerChar());
+        player.setSnake(snake);
         snakes.add(snake);
     }
 
@@ -60,13 +86,31 @@ public class Game implements Runnable {
         // Check for collisions and fruit
         for (Snake snake : snakes) {
             Point head = snake.getHead();
+
+            // Find the player for this snake to send debug messages
+            PlayerHandler player = null;
+            for (PlayerHandler p : players) {
+                if (p.getSnake() == snake) {
+                    player = p;
+                    break;
+                }
+            }
+
             // Check wall collision
             if (board.getCell(head.x, head.y) == '#') {
+                if (player != null) player.sendMessage("DEBUG: Wall collision at (" + head.x + ", " + head.y + ")");
                 snakesToRemove.add(snake);
                 continue;
             }
             // Check self-collision
             if (snake.checkSelfCollision()) {
+                if (player != null) {
+                    StringBuilder bodyState = new StringBuilder("DEBUG: Self collision. Body: ");
+                    for(Point p : snake.getBody()) {
+                        bodyState.append("(").append(p.x).append(",").append(p.y).append(") ");
+                    }
+                    player.sendMessage(bodyState.toString());
+                }
                 snakesToRemove.add(snake);
                 continue;
             }
@@ -75,6 +119,7 @@ public class Game implements Runnable {
                 if (snake == otherSnake) continue;
                 for (Point bodyPart : otherSnake.getBody()) {
                     if (head.equals(bodyPart)) {
+                        if (player != null) player.sendMessage("DEBUG: Other snake collision");
                         snakesToRemove.add(snake);
                         break;
                     }
@@ -85,7 +130,8 @@ public class Game implements Runnable {
             char cellContent = board.getCell(head.x, head.y);
             if (cellContent >= '1' && cellContent <= '9') {
                 int fruitValue = Character.getNumericValue(cellContent);
-                snake.grow(fruitValue);
+                snake.addScore(fruitValue);
+                snake.grow(); // Grow by 1 segment
                 board.setCell(head.x, head.y, ' ');
                 board.placeFruit();
             }
@@ -182,10 +228,17 @@ public class Game implements Runnable {
             sb.append(new String(tempGrid[i])).append("\n");
         }
 
-        sb.append("--- Scoreboard ---\n");
+        sb.append("--- Top 3 Players ---\n");
+        List<Snake> sortedSnakes = new ArrayList<>(snakes);
+        sortedSnakes.sort((s1, s2) -> Integer.compare(s2.getScore(), s1.getScore()));
+
+        int rank = 1;
         int totalScore = 0;
-        for (Snake snake : snakes) {
-            sb.append("Player '").append(snake.getBodyChar()).append("': ").append(snake.getScore()).append("\n");
+        for (Snake snake : sortedSnakes) {
+            if (rank <= 3) {
+                sb.append(rank).append(". Player '").append(snake.getBodyChar()).append("': ").append(snake.getScore()).append("\n");
+            }
+            rank++;
             totalScore += snake.getScore();
         }
         sb.append("--------------------\n");

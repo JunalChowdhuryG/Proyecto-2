@@ -30,25 +30,24 @@ public class SnakeServer {
             gameThread.start();
 
             int playerCounter = 0;
-            char[] playerChars = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
+            // Expanded character set for more players
+            char[] playerChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();
 
             while (true) {
                 Socket clientSocket = serverSocket.accept();
-                if (playerCounter < playerChars.length) {
-                    System.out.println("New player connected: " + clientSocket.getInetAddress());
-                    char playerChar = playerChars[playerCounter % playerChars.length];
 
-                    PlayerHandler playerHandler = new PlayerHandler(clientSocket, game, playerChar, players);
-                    players.add(playerHandler);
+                System.out.println("New player connected: " + clientSocket.getInetAddress());
+                // Cycle through the character set for new players
+                char playerChar = playerChars[playerCounter % playerChars.length];
 
-                    Thread playerThread = new Thread(playerHandler);
-                    playerThread.start();
+                PlayerHandler playerHandler = new PlayerHandler(clientSocket, game, playerChar, players);
+                players.add(playerHandler);
+                game.addNewPlayer(playerHandler);
 
-                    playerCounter++;
-                } else {
-                    System.out.println("Maximum players reached. Connection rejected.");
-                    clientSocket.close();
-                }
+                Thread playerThread = new Thread(playerHandler);
+                playerThread.start();
+
+                playerCounter++;
             }
         } catch (IOException e) {
             System.err.println("Server error: " + e.getMessage());

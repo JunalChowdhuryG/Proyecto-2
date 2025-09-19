@@ -81,11 +81,41 @@ public class Board {
         "########################################"
     };
 
+    // Level 4: Large Arena
+    private static final String[] LEVEL_4_MAP = {
+        "############################################################",
+        "#                                                          #",
+        "#                                                          #",
+        "#    #############                  #############          #",
+        "#    #           #                  #           #          #",
+        "#    #           #                  #           #          #",
+        "#    #           #                  #           #          #",
+        "#    #############                  #############          #",
+        "#                                                          #",
+        "#                                                          #",
+        "#                                                          #",
+        "#                                                          #",
+        "#                  ####################                    #",
+        "#                  #                  #                    #",
+        "#                  #                  #                    #",
+        "#                  ####################                    #",
+        "#                                                          #",
+        "#                                                          #",
+        "#    #############                  #############          #",
+        "#    #           #                  #           #          #",
+        "#    #           #                  #           #          #",
+        "#    #           #                  #           #          #",
+        "#    #############                  #############          #",
+        "#                                                          #",
+        "############################################################"
+    };
+
     private static final List<String[]> LEVELS = new ArrayList<>();
     static {
         LEVELS.add(LEVEL_1_MAP);
         LEVELS.add(LEVEL_2_MAP);
         LEVELS.add(LEVEL_3_MAP);
+        LEVELS.add(LEVEL_4_MAP);
     }
 
     public Board(int level) {
@@ -105,9 +135,15 @@ public class Board {
 
     public List<Point> getSafeSpawnPoints() {
         List<Point> safePoints = new ArrayList<>();
+        // A point is "safe" if the snake can spawn there (head) and not have its
+        // body in a wall, and also not crash on its first move to the right.
+        // Requires 4 empty cells in a row: [body-2, body-1, head, first-move]
         for (int y = 1; y < height - 1; y++) {
-            for (int x = 1; x < width - 1; x++) {
-                if (grid[y][x] == ' ') {
+            for (int x = 2; x < width - 2; x++) { // x starts at 2 to allow for body, ends at width-2 for first move
+                if (grid[y][x] == ' ' &&
+                    grid[y][x - 1] == ' ' &&
+                    grid[y][x - 2] == ' ' &&
+                    grid[y][x + 1] == ' ') {
                     safePoints.add(new Point(x, y));
                 }
             }

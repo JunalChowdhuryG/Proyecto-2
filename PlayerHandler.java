@@ -1,11 +1,9 @@
-import java.awt.Point;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.List;
-import java.util.Random;
 
 public class PlayerHandler implements Runnable {
     private Socket socket;
@@ -14,22 +12,13 @@ public class PlayerHandler implements Runnable {
     private PrintWriter out;
     private List<PlayerHandler> players;
     private volatile boolean running = true;
+    private final char playerChar;
 
     public PlayerHandler(Socket socket, Game game, char playerChar, List<PlayerHandler> players) {
         this.socket = socket;
         this.game = game;
+        this.playerChar = playerChar;
         this.players = players;
-
-        // Find a safe starting position
-        Random rand = new Random();
-        int startX, startY;
-        // A simple way to avoid spawning on a wall. A more robust method would check for other snakes.
-        startX = rand.nextInt(36) + 2; // Board width 40, so 2 to 37
-        startY = rand.nextInt(16) + 2; // Board height 20, so 2 to 17
-
-        this.snake = new Snake(startX, startY, playerChar);
-        this.game.addSnake(this.snake);
-
         try {
             this.out = new PrintWriter(socket.getOutputStream(), true);
         } catch (IOException e) {
@@ -42,6 +31,8 @@ public class PlayerHandler implements Runnable {
         try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
             String inputLine;
             while (running && (inputLine = in.readLine()) != null) {
+                if (snake == null) continue; // Don't process commands if snake isn't ready
+
                 switch (inputLine.trim().toLowerCase()) {
                     case "w":
                         snake.setDirection(Snake.Direction.UP);
@@ -61,7 +52,7 @@ public class PlayerHandler implements Runnable {
                 }
             }
         } catch (IOException e) {
-            System.out.println("Player " + snake.getBodyChar() + " disconnected: " + e.getMessage());
+            // This is expected when a client disconnects
         } finally {
             closeConnection();
         }
@@ -86,10 +77,18 @@ public class PlayerHandler implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println("Player " + (snake != null ? snake.getBodyChar() : "") + " connection closed.");
+        System.out.println("Player " + playerChar + " connection closed.");
     }
 
     public Snake getSnake() {
         return snake;
+    }
+
+    public void setSnake(Snake snake) {
+        this.snake = snake;
+    }
+
+    public char getPlayerChar() {
+        return playerChar;
     }
 }

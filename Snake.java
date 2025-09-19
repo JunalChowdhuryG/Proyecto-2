@@ -22,8 +22,9 @@ public class Snake {
     }
 
     public void move() {
-        Point head = body.getFirst();
-        Point newHead = new Point(head);
+        // Using index-based operations as a desperate attempt to fix a mysterious bug.
+        Point currentHead = body.get(0);
+        Point newHead = new Point(currentHead.x, currentHead.y);
 
         switch (direction) {
             case UP:
@@ -40,18 +41,21 @@ public class Snake {
                 break;
         }
 
-        body.addFirst(newHead);
+        body.add(0, newHead); // Add to front
 
         if (growthPending > 0) {
             growthPending--;
         } else {
-            body.removeLast();
+            body.remove(body.size() - 1); // Remove from end
         }
     }
 
-    public void grow(int amount) {
-        growthPending += amount;
+    public void addScore(int amount) {
         score += amount;
+    }
+
+    public void grow() {
+        growthPending++;
     }
 
     public void setDirection(Direction newDirection) {

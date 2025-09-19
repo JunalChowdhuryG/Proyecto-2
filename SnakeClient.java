@@ -58,6 +58,13 @@ public class SnakeClient {
                 }
             }
 
+            // Give the listener thread a moment to receive messages before exiting
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
             // If we break the loop, close the client
             System.exit(0);
 
