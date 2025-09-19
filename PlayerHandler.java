@@ -67,6 +67,7 @@ public class PlayerHandler implements Runnable {
     public void closeConnection() {
         this.running = false;
         if (snake != null) {
+            HighScores.submitScore(snake.getBodyChar(), snake.getScore());
             game.removeSnake(snake);
         }
         players.remove(this);

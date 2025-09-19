@@ -228,19 +228,21 @@ public class Game implements Runnable {
             sb.append(new String(tempGrid[i])).append("\n");
         }
 
-        sb.append("--- Top 3 Players ---\n");
-        List<Snake> sortedSnakes = new ArrayList<>(snakes);
-        sortedSnakes.sort((s1, s2) -> Integer.compare(s2.getScore(), s1.getScore()));
-
+        sb.append("--- All-Time High Scores ---\n");
+        List<HighScoreEntry> topScores = HighScores.getTopScores();
         int rank = 1;
-        int totalScore = 0;
-        for (Snake snake : sortedSnakes) {
-            if (rank <= 3) {
-                sb.append(rank).append(". Player '").append(snake.getBodyChar()).append("': ").append(snake.getScore()).append("\n");
-            }
+        for (HighScoreEntry entry : topScores) {
+            sb.append(rank).append(". Player '").append(entry.getPlayerChar()).append("': ").append(entry.getScore()).append("\n");
             rank++;
+        }
+
+        sb.append("--- Current Players ---\n");
+        int totalScore = 0;
+        for (Snake snake : snakes) {
+            sb.append("Player '").append(snake.getBodyChar()).append("': ").append(snake.getScore()).append("\n");
             totalScore += snake.getScore();
         }
+
         sb.append("--------------------\n");
         sb.append("Level Up In: ").append(Math.max(0, (currentLevel * LEVEL_UP_SCORE_THRESHOLD) - totalScore)).append(" points\n");
 
